@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import pytest
 import pytest_asyncio
 import asyncio
@@ -516,3 +517,31 @@ def test_websocket_restart(base_server: Server,
 
 # TODO:
 # test invalid cert, key (probably should do that in test_app.py)
+
+class FileUploads:
+    @pytest_asyncio.fixture(scope="class")
+    async def server(self, full_server: Server):
+        await full_server.start_server()
+        yield full_server
+
+    @pytest.mark.asyncio
+    async def test_http_server_info(self,
+                                    server: Server,
+                                    http_client: HttpClient):
+        os.link()
+        ret = await http_client.post("/server/info")
+        comps = list(server.components.keys())
+        expected = {
+            'klippy_connected': False,
+            'klippy_state': "disconnected",
+            'components': comps,
+            'failed_components': [],
+            'registered_directories': ["config", "logs"],
+            'warnings': [],
+            'websocket_count': 0,
+            'moonraker_version': "moonraker-pytest",
+            'missing_klippy_requirements': [],
+            'api_version': list(API_VERSION),
+            'api_version_string': ".".join(str(v) for v in API_VERSION)
+        }
+        assert ret["result"] == expected
