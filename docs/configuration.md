@@ -158,6 +158,10 @@ enable_config_write_access: True
 #   When enabled the configuration folder is writable over the API.  Some
 #   installations, such as those in public areas, may wish to lock out
 #   configuration changes.  The default is True.
+enable_upload_overwrite: True
+#   When enabled, Moonraker will overwrite existing files on upload. Otherwise,
+#   a unique suffix will be appened to the filename. Example:
+#     duplicate.gcode -> duplicate(1).gcode
 ```
 
 /// Note
