@@ -82,6 +82,7 @@ class FileManager:
         self.add_reserved_path("backup", self.datapath.joinpath("backup"), False)
         self.gcode_metadata = MetadataStorage(config, db)
         self.sync_lock = NotifySyncLock(config)
+        self.enable_upload_overwrite = config.getboolean('enable_upload_overwrite', True)
         avail_observers: Dict[str, Type[BaseFileSystemObserver]] = {
             "none": BaseFileSystemObserver,
             "inotify": InotifyObserver
@@ -880,6 +881,20 @@ class FileManager:
             logging.info(
                 f"Destination file exists and appears to be read-only: {dest_path}"
             )
+
+        # Imperfect implementation that suffers from a TOCTOU race, however:
+        # 1. It's unlikely to occur (at this point we've acquired `sync_lock`,
+        #    so it'd have to be done by an external program)
+        # 2. Atomic renames don't work across filesystems, so we're likely to
+        #    encounter this anyway trying to copy from tmpfs -> disk
+        if not self.enable_upload_overwrite:
+            name, ext = os.path.splitext(dest_path)
+            i = 1
+            while os.path.exists(dest_path):
+                dest_path = f"{name}({i}){ext}"
+                i += 1
+            filename = os.path.basename(dest_path)
+
         return {
             'root': root,
             'filename': filename,
